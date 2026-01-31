@@ -24,12 +24,6 @@ async def on_ready():
     except (FileNotFoundError, ValueError):
         pass
     if args["sync"]:
-
-        # TODO remove once this is no longer needed
-        for guild in bot.guilds:
-            bot.tree.clear_commands(guild=guild, type=None)
-            await bot.tree.sync(guild=guild)
-
         await bot.tree.sync()
 
 
