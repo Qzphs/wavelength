@@ -91,6 +91,22 @@ async def scores(interaction: discord.Interaction):
 
 
 @bot.tree.command(
+    name="rounds",
+    description="Send information about each individual round.",
+)
+async def rounds(interaction: discord.Interaction):
+    if channel_whitelist and interaction.channel not in channel_whitelist:
+        return
+    if game.rounds:
+        rounds_message = "\n".join(
+            f"- {round.word}, {round.number} {round.scores}" for round in game.rounds
+        )
+    else:
+        rounds_message = "(no rounds yet)"
+    await interaction.response.send_message(str(rounds_message))
+
+
+@bot.tree.command(
     name="quit",
     description="Stop running the bot.",
 )
