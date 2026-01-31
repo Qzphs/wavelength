@@ -4,6 +4,10 @@ from game.words import random_number, random_word
 Player = str
 
 
+class InvalidActionError(Exception):
+    pass
+
+
 class Round:
 
     def __init__(self, host: Player, word: str, number: int):
@@ -19,7 +23,7 @@ class Round:
 
     def guess(self, player: Player, number: int):
         if player == self.host:
-            raise Exception("host cannot guess")
+            raise InvalidActionError("host cannot guess")
         self.guesses[player] = number
         self.scores[player] = abs(self.number - number)
         self.scores[self.host] = sum(

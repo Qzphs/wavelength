@@ -3,7 +3,7 @@ import argparse
 import discord
 from discord.ext import commands
 
-from game import Player, Round
+from game import Game, InvalidActionError
 
 
 parser = argparse.ArgumentParser()
@@ -11,7 +11,7 @@ parser.add_argument("-s", "--sync", action="store_true")
 args = vars(parser.parse_args())
 
 
-rounds: list[Round] = []
+game = Game()
 
 bot = commands.Bot(intents=discord.Intents.all(), command_prefix=[])
 
@@ -39,13 +39,14 @@ async def on_ready():
 async def on_message(message: discord.Message):
     if channel_whitelist and message.channel not in channel_whitelist:
         return
-    if not rounds:
-        return
     number = _parse_number(message.content)
     if number is None:
         return
     player = message.author.nick or message.author.name
-    rounds[-1].guess(player, number)
+    try:
+        game.guess(player, number)
+    except InvalidActionError:
+        return
     await message.add_reaction("❤")
 
 
@@ -67,10 +68,9 @@ async def reroll(interaction: discord.Interaction):
     if channel_whitelist and interaction.channel not in channel_whitelist:
         return
     player = interaction.user.nick or interaction.user.name
-    round = Round.random(player)
-    rounds.append(round)
+    game.new_round(player)
     await interaction.response.send_message(
-        f"word: {round.word}, number: ||`{round.number:>3}`||"
+        f"word: {game.rounds[-1].word}, number: ||`{game.rounds[-1].number:>3}`||"
     )
 
 
@@ -81,13 +81,13 @@ async def reroll(interaction: discord.Interaction):
 async def scores(interaction: discord.Interaction):
     if channel_whitelist and interaction.channel not in channel_whitelist:
         return
-    scores: list[Player, int] = {}
-    for round in rounds:
-        for player, score in round.scores.items():
-            if player not in scores:
-                scores[player] = 0
-            scores[player] += score
-    await interaction.response.send_message(str(scores))
+    if game.scores():
+        scores_message = "\n".join(
+            f"- {player}: {score}" for player, score in game.scores().items()
+        )
+    else:
+        scores_message = "(no scores yet)"
+    await interaction.response.send_message(str(scores_message))
 
 
 @bot.tree.command(
