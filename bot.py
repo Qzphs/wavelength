@@ -3,7 +3,7 @@ import argparse
 import discord
 from discord.ext import commands
 
-from game import Game, InvalidActionError
+from game import Game, InvalidActionError, words
 
 
 parser = argparse.ArgumentParser()
@@ -107,6 +107,7 @@ async def rounds(interaction: discord.Interaction):
 async def quit(interaction: discord.Interaction):
     if channel_whitelist and interaction.channel not in channel_whitelist:
         return
+    words.save("words.txt")
     await interaction.response.send_message(":zany_face:")
     await bot.close()
 
