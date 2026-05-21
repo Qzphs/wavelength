@@ -1,47 +1,11 @@
-import argparse
-
 import discord
-from discord.ext import commands
 
-from game import Game, InvalidActionError, words
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("-s", "--sync", action="store_true")
-args = vars(parser.parse_args())
-
+from game.game import Game
+from game.round import InvalidActionError
+from game.words import words
+import hideout
 
 game = Game()
-
-bot = commands.Bot(intents=discord.Intents.all(), command_prefix=[])
-
-channel_whitelist: list[discord.TextChannel] = []
-
-
-@bot.event
-async def on_ready():
-    try:
-        with open("channel.txt") as file:
-            channel_whitelist.append(bot.get_channel(int(file.read())))
-    except (FileNotFoundError, ValueError):
-        pass
-    if args["sync"]:
-        await bot.tree.sync()
-
-
-@bot.event
-async def on_message(message: discord.Message):
-    if channel_whitelist and message.channel not in channel_whitelist:
-        return
-    number = _parse_number(message.content)
-    if number is None:
-        return
-    player = message.author.nick or message.author.name
-    try:
-        game.guess(player, number)
-    except InvalidActionError:
-        return
-    await message.add_reaction("❤")
 
 
 def _parse_number(text: str):
@@ -54,13 +18,23 @@ def _parse_number(text: str):
     return number
 
 
-@bot.tree.command(
-    name="reroll",
-    description="Send a random word and a (spoilered) number from 0 to 100.",
-)
-async def reroll(interaction: discord.Interaction):
-    if channel_whitelist and interaction.channel not in channel_whitelist:
+@hideout.event
+async def on_message(message: discord.Message):
+    if message.author not in hideout.whitelist:
         return
+    number = _parse_number(message.content)
+    if number is None:
+        return
+    player = message.author.nick or message.author.name
+    try:
+        game.guess(player, number)
+    except InvalidActionError:
+        return
+    await message.add_reaction("❤")
+
+
+@hideout.function
+async def reroll(interaction: discord.Interaction):
     player = interaction.user.nick or interaction.user.name
     game.new_round(player)
     await interaction.response.send_message(
@@ -68,13 +42,16 @@ async def reroll(interaction: discord.Interaction):
     )
 
 
-@bot.tree.command(
-    name="scores",
-    description="Send the current score of each player.",
+@hideout.command(
+    name="reroll",
+    description="Send a random word and a (spoilered) number from 0 to 100.",
 )
+async def reroll_command(interaction: discord.Interaction):
+    await reroll(interaction)
+
+
+@hideout.function
 async def scores(interaction: discord.Interaction):
-    if channel_whitelist and interaction.channel not in channel_whitelist:
-        return
     if game.scores():
         scores_message = "\n".join(
             f"- {player}: {score}" for player, score in game.scores().items()
@@ -84,13 +61,16 @@ async def scores(interaction: discord.Interaction):
     await interaction.response.send_message(str(scores_message))
 
 
-@bot.tree.command(
-    name="rounds",
-    description="Send information about each individual round.",
+@hideout.command(
+    name="scores",
+    description="Send the current score of each player.",
 )
+async def scores_command(interaction: discord.Interaction):
+    await scores(interaction)
+
+
+@hideout.function
 async def rounds(interaction: discord.Interaction):
-    if channel_whitelist and interaction.channel not in channel_whitelist:
-        return
     if game.rounds:
         rounds_message = "\n".join(
             f"- {round.word}, {round.number} {round.scores}" for round in game.rounds
@@ -100,19 +80,17 @@ async def rounds(interaction: discord.Interaction):
     await interaction.response.send_message(str(rounds_message))
 
 
-@bot.tree.command(
-    name="quit",
-    description="Stop running the bot.",
+@hideout.command(
+    name="rounds",
+    description="Send information about each individual round.",
 )
-async def quit(interaction: discord.Interaction):
-    if channel_whitelist and interaction.channel not in channel_whitelist:
-        return
+async def rounds_command(interaction: discord.Interaction):
+    await rounds(interaction)
+
+
+@hideout.on_quit
+async def on_quit():
     words.save("words.txt")
-    await interaction.response.send_message(":zany_face:")
-    await bot.close()
 
 
-with open("token.txt") as file:
-    TOKEN = file.read().strip()
-
-bot.run(TOKEN)
+hideout.bot.run()
