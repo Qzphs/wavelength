@@ -1,8 +1,10 @@
+import random
+
 import discord
 
 from game.game import Game
 from game.round import InvalidActionError
-from game.words import words
+from game.words import random_word, words
 import hideout
 
 game = Game()
@@ -22,6 +24,22 @@ def _parse_number(text: str):
 async def on_message(message: discord.Message):
     if message.author not in hideout.whitelist:
         return
+
+    if message.content.startswith(".r2"):
+        await message.channel.send(
+            f"words: {random_word()}, {random_word()}, "
+            f"number: ||`{random.randint(1, 16)}`||"
+        )
+        return
+
+    if message.content.startswith(".r"):
+        player = message.author.nick or message.author.name
+        game.new_round(player)
+        await message.channel.send(
+            f"word: {game.rounds[-1].word}, number: ||`{game.rounds[-1].number:>3}`||"
+        )
+        return
+
     number = _parse_number(message.content)
     if number is None:
         return
@@ -48,6 +66,31 @@ async def reroll(interaction: discord.Interaction):
 )
 async def reroll_command(interaction: discord.Interaction):
     await reroll(interaction)
+
+
+@hideout.function
+async def reroll_2d(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        f"words: {random_word()}, {random_word()}, "
+        f"number: ||`{random.randint(1, 16)}`||"
+    )
+
+
+@hideout.command(
+    name="reroll2d",
+    description="Send two random words and a (spoilered) number from 1 to 16.",
+)
+async def reroll_2d_command(interaction: discord.Interaction):
+    await reroll_2d(interaction)
+
+
+# Alias for reroll2d
+@hideout.command(
+    name="r2roll",
+    description="Send two random words and a (spoilered) number from 1 to 16.",
+)
+async def r2roll_command(interaction: discord.Interaction):
+    await reroll_2d(interaction)
 
 
 @hideout.function
