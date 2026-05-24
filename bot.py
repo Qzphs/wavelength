@@ -28,7 +28,7 @@ async def on_message(message: discord.Message):
     if message.content.startswith(".r2"):
         await message.channel.send(
             f"words: {random_word()}, {random_word()}, "
-            f"number: ||`{random.randint(1, 16)}`||"
+            f"number: ||`{random.randint(1, 16):>2}`||"
         )
         return
 
@@ -72,7 +72,7 @@ async def reroll_command(interaction: discord.Interaction):
 async def reroll_2d(interaction: discord.Interaction):
     await interaction.response.send_message(
         f"words: {random_word()}, {random_word()}, "
-        f"number: ||`{random.randint(1, 16)}`||"
+        f"number: ||`{random.randint(1, 16):>2}`||"
     )
 
 
