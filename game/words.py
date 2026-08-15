@@ -1,6 +1,6 @@
 import random
 
-PREFIX = "#"
+EXHAUSTED_PREFIX = "#"
 
 
 class WordManager:
@@ -20,8 +20,8 @@ class WordManager:
         self.available.clear()
         self.exhausted.clear()
         for word in words:
-            if word.startswith(PREFIX):
-                self.exhausted.append(word.removeprefix(PREFIX).strip())
+            if word.startswith(EXHAUSTED_PREFIX):
+                self.exhausted.append(word.removeprefix(EXHAUSTED_PREFIX).strip())
             else:
                 self.available.append(word)
 
@@ -54,9 +54,9 @@ class WordManager:
             if available[-1] > exhausted[-1]:
                 words.append(available.pop())
             else:
-                words.append(PREFIX + " " + exhausted.pop())
+                words.append(EXHAUSTED_PREFIX + " " + exhausted.pop())
         words.extend(reversed(available))
-        words.extend(PREFIX + " " + word for word in reversed(exhausted))
+        words.extend(EXHAUSTED_PREFIX + " " + word for word in reversed(exhausted))
 
         with open(filename, "w") as file:
             file.write("\n".join(reversed(words)))
@@ -65,11 +65,3 @@ class WordManager:
 
 words = WordManager()
 words.load("words.txt")
-
-
-def random_word():
-    return words.random()
-
-
-def random_number():
-    return random.randint(0, 100)

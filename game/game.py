@@ -17,7 +17,7 @@ class Game:
     def scores(self):
         result: dict[Player, int] = {}
         for round in self.rounds:
-            for player, score in round.scores.items():
+            for player, score in round.scores():
                 if player not in result:
                     result[player] = 0
                 result[player] += score
